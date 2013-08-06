@@ -28,26 +28,40 @@
 #include "SteerableFilters.h"
 #include <opencv2/imgproc/imgproc.hpp>
 
-SteerableFilters::SteerableFilters(const cv::Mat_<float> &image, int width, float spacing)
-{
+typedef float (*KernelType)(float x);
 
-    m_g1.create(1, 9); for(int i = -width; i <= width; i++) m_g1(i+width) = G21(float(i)*spacing);
-    m_g2.create(1, 9); for(int i = -width; i <= width; i++) m_g2(i+width) = G22(float(i)*spacing);
-    m_g3.create(1, 9); for(int i = -width; i <= width; i++) m_g3(i+width) = G23(float(i)*spacing);
+static cv::Mat_<float> create(int width, float spacing, KernelType f)
+{
+    cv::Mat_<float> kernel(1, width * 2 + 1);
+    for(int i = -width; i <= width; i++)
+        kernel(i+width) = f(float(i)*spacing);
     
-    m_h1.create(1, 9); for(int i = -width; i <= width; i++) m_h1(i+width) = H21(float(i)*spacing);
-    m_h2.create(1, 9); for(int i = -width; i <= width; i++) m_h2(i+width) = H22(float(i)*spacing);
-    m_h3.create(1, 9); for(int i = -width; i <= width; i++) m_h3(i+width) = H23(float(i)*spacing);
-    m_h4.create(1, 9); for(int i = -width; i <= width; i++) m_h4(i+width) = H24(float(i)*spacing);
-    
-    setup(image);
+    return kernel;
 }
 
-void SteerableFilters::unwrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output)
+// Utility routine to map the opencv atan2 output from [0 2*pi] to [-pi/2 pi/2]
+// This isn't truly necessary but is should be helpful to provide compatibility with conventions in the paper
+static void wrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output)
 {
     output = angle.clone();
     cv::Mat_<float> tmp = (-M_PI - (M_PI - angle));
     tmp.copyTo(output, (angle > M_PI));
+}
+
+SteerableFilters::SteerableFilters(const cv::Mat_<float> &image, int width, float spacing)
+{
+    // Create separable filters for G2
+    m_g1 = create(width, spacing, G21);
+    m_g2 = create(width, spacing, G22);
+    m_g3 = create(width, spacing, G23);
+
+    // Create separable filters for H2
+    m_h1 = create(width, spacing, H21);
+    m_h2 = create(width, spacing, H22);
+    m_h3 = create(width, spacing, H23);
+    m_h4 = create(width, spacing, H24);
+    
+    setup(image);
 }
 
 //  phase = arg(G2, H2) where arg(x + iy) = atan(y,x), (opencv return angles in [0..2pi])
@@ -57,8 +71,8 @@ void SteerableFilters::unwrap(const cv::Mat_<float> &angle, cv::Mat_<float> &out
 // -pi/2   = edge
 void SteerableFilters::computeMagnitudeAndPhase(const cv::Mat_<float> &g2, const cv::Mat_<float> &h2, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
 {
-    cv::cartToPolar(g2, h2, magnitude, phase); // [0..2*M_PI]
-    unwrap(phase, phase);
+    cv::cartToPolar(g2, h2, magnitude, phase); // [0..2*piI]
+    wrap(phase, phase); // [-pi/2 pi/2]
     cv::patchNaNs(phase);
 }
 
@@ -142,7 +156,6 @@ void SteerableFilters::setup(const cv::Mat_<float> &image)
     // The phase angle of a complex number is the angle the theoretical vector to (real,imag) forms with the real axis (i.e., its arc tangent).
     // It returns the same as: atan2(x.imag(),x.real());
     // OpenCV: cartToPolar(x, y) return atan2(y, x);
-    // Note: see http://www.chiefdelphi.com/media/papers/download/3082 for atan2 coordinates
     // In the paper theta = 0 is the vertical orientation, and theta increases counterclockwise
     
     m_c1 = 0.5*(g2bb) + 0.25*(g2ac) + 0.375*(g2aa + g2cc) + 0.3125*(h2aa + h2dd) + 0.5625*(h2bb + h2cc) + 0.375*(h2ac + h2bd);
@@ -150,7 +163,7 @@ void SteerableFilters::setup(const cv::Mat_<float> &image)
     m_c3 = (-g2ab) - g2bc - (0.9375*(h2cd + h2ab)) - (1.6875*(h2bc)) - (0.1875*(h2ad));
     
     cv::cartToPolar(m_c2, m_c3, m_orientationStrength, m_theta); // dominant orientation angle
-    unwrap(m_theta, m_theta);
+    wrap(m_theta, m_theta);
     m_theta *= 0.5;
 }
 
