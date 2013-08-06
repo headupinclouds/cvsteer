@@ -117,9 +117,11 @@ public:
     : m_filenames(filenames)
     , m_images(images)
     , m_directory(directory)
+    , m_percentileRank(95.0)
     , m_doLogging(true) {}
     
     void setDoLogging(bool flag) { m_doLogging = flag; }
+    void setPercentileRank(float rank) { m_percentileRank = rank; }
     
     virtual void operator()( const cv::Range &r ) const
     {
@@ -148,18 +150,18 @@ public:
             
             // Normalize the g2 h2 images together:
             cv::hconcat(g2, h2, g2);
-            g2 = cv::min(g2, findPercentile(g2, 98.0));
+            g2 = cv::min(g2, findPercentile(g2, m_percentileRank));
             cv::normalize(g2, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
             
             // Add the dominant orientation energy:
-            e = cv::min(e, findPercentile(e, 98.0));
+            e = cv::min(e, findPercentile(e, m_percentileRank));
             cv::normalize(e, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
             
             // Normalize the phase-edge and phase-line images together to compare magnitude:
             cv::hconcat(edges, lines, edges);
-            edges = cv::min(edges, findPercentile(edges, 98.0));
+            edges = cv::min(edges, findPercentile(edges, m_percentileRank));
             cv::normalize(edges, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
 
@@ -177,6 +179,7 @@ public:
 protected:
     
     bool m_doLogging;
+    float m_percentileRank;
     const std::string &m_directory;
     const std::vector<std::string> &m_filenames;
     std::vector<cv::Mat> &m_images;
