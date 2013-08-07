@@ -107,18 +107,45 @@ void SteerableFilters::steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, 
     e = m_c1 + m_c2.mul(c2t) + m_c3.mul(s2t);
 }
 
-void SteerableFilters::phaseLine(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
+void SteerableFilters::phaseLine1(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
 {
-    cv::Mat_<float> cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phase, cp, sp); // implicitly (phase - 0)
+    cv::Mat_<float> phaseOffset = phase, cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
     cv::pow(cp, k, lambda);
-    lambda.setTo(0, cv::abs(phase) > M_PI_2 );
+    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    lines = e.mul(lambda);
+}
+
+void SteerableFilters::phaseLine0(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
+{
+    cv::Mat_<float> phaseOffset = phase - M_PI, cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
     lines = e.mul(lambda);
 }
 
 void SteerableFilters::phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
 {
     cv::Mat_<float> phaseOffset = cv::abs(phase) - M_PI_2, cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    edges = e.mul(lambda);
+}
+
+void SteerableFilters::phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+{
+    cv::Mat_<float> phaseOffset = phase - M_PI_2, cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    edges = e.mul(lambda);
+}
+
+void SteerableFilters::phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+{
+    cv::Mat_<float> phaseOffset = phase + M_PI_2, cp, sp, lambda;
     cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
     cv::pow(cp, k, lambda);
     lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );

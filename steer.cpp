@@ -30,6 +30,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <fstream>
 #include <iostream>
+#include "ConicSection.h"
 
 typedef std::vector<cv::Point2f> PointSetf;
 
@@ -117,7 +118,7 @@ public:
     : m_filenames(filenames)
     , m_images(images)
     , m_directory(directory)
-    , m_percentileRank(95.0)
+    , m_percentileRank(90.0)
     , m_doLogging(true) {}
     
     void setDoLogging(bool flag) { m_doLogging = flag; }
@@ -131,16 +132,19 @@ public:
             if(image.empty())
                 continue;
             
+            // cv::pyrDown(image, image);
+            // cv::resize(image, image, cv::Size(100, 100*image.rows/image.cols));
+            
             if(image.channels() != 1)
                 cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
             
-            cv::Mat_<float> g2, h2, e, magnitude, phase, edges, lines;
-            
-            SteerableFilters filters(gray);
+            cv::Mat_<float> g2, h2, e, magnitude, phase, edges, lines0, lines1;
+            SteerableFilters filters(gray, 4, 0.67);
             filters.steer(filters.getDominantOrientationAngle(), g2, h2, e, magnitude, phase);
             filters.phaseEdge(e, phase, edges, 2.0);
-            filters.phaseLine(e, phase, lines, 2.0);
-            
+            filters.phaseLine0(e, phase, lines0, 2.0);
+            filters.phaseLine1(e, phase, lines1, 2.0);
+
             // Now display the computed results:
             std::vector<cv::Mat> images;
             cv::Mat canvas;;
@@ -160,12 +164,14 @@ public:
             images.push_back(canvas.clone());
             
             // Normalize the phase-edge and phase-line images together to compare magnitude:
-            cv::hconcat(edges, lines, edges);
+            cv::Mat channels[3] = { edges, lines0, lines1 };
+            cv::hconcat(channels, 3, edges);
             edges = cv::min(edges, findPercentile(edges, m_percentileRank));
             cv::normalize(edges, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
 
             cv::hconcat(images, canvas);
+        
             m_images[i] = canvas;
         
             if(!m_images[i].empty())
@@ -228,7 +234,9 @@ int main(int argc, const char * argv[])
     
     std::vector<cv::Mat> images(filenames.size());
     ParallelSteerable body(filenames, images, directory);
-    cv::parallel_for_(cv::Range(0, static_cast<int>(filenames.size())), body);
+    
+    body( cv::Range(0, filenames.size() ) );
+    //cv::parallel_for_(cv::Range(0, static_cast<int>(filenames.size())), body);
     
     //cv::Mat canvas;
     //cv::vconcat(images, canvas);
