@@ -28,9 +28,11 @@
 #ifndef __steerable__SteerableFiltersG4__
 #define __steerable__SteerableFiltersG4__
 
-#include <opencv2/core/core.hpp>
+#include "SteerableFilters.h"
 
-class SteerableFiltersG4
+_STEER_BEGIN
+
+class SteerableFiltersG4 : public SteerableFilters
 {
 public:
 
@@ -53,5 +55,7 @@ protected:
     cv::Mat_<float> m_h4a, m_h4b, m_h4c, m_h4d, m_h4e, m_h4f;
     cv::Mat_<float> m_c1, m_c2, m_c3, m_theta, m_orientationStrength;
 };
+
+_STEER_END
 
 #endif

@@ -28,13 +28,15 @@
 #ifndef __steerable__SteerableFilters__
 #define __steerable__SteerableFilters__
 
-#include <opencv2/core/core.hpp>
+#include "SteerableFilters.h"
 
-class SteerableFilters
+_STEER_BEGIN
+
+class SteerableFiltersG2 : public SteerableFilters
 {
 public:
     
-    SteerableFilters(const cv::Mat_<float> &image, int width = 4, float spacing = 0.67);
+    SteerableFiltersG2(const cv::Mat_<float> &image, int width = 4, float spacing = 0.67);
 
     const cv::Mat_<float>& getDominantOrientationAngle() const { return m_theta; }
     const cv::Mat_<float>& getDominantOrientationStrength() const { return m_orientationStrength; }
@@ -59,6 +61,6 @@ protected:
     cv::Mat_<float> m_c1, m_c2, m_c3, m_theta, m_orientationStrength;
 };
 
-
+_STEER_END
 
 #endif /* defined(__steerable__SteerableFilters__) */

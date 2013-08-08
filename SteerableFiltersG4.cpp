@@ -29,16 +29,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 
-typedef float (*KernelType)(float x);
-
-static cv::Mat_<float> create(int width, float spacing, KernelType f)
-{
-    cv::Mat_<float> kernel(1, width * 2 + 1);
-    for(int i = -width; i <= width; i++)
-        kernel(i+width) = f(float(i)*spacing);
-    
-    return kernel;
-}
+_STEER_BEGIN
 
 static float G41(float x) { return 1.246 * (0.75 - 3.0f*x*x + x*x*x*x) * exp(-x*x); } // f1
 static float G42(float x) { return exp(-x*x); } // f2
@@ -71,18 +62,13 @@ SteerableFiltersG4::SteerableFiltersG4(const cv::Mat_<float> &image, int width, 
     m_g4 = create(width, spacing, G44);
     m_g5 = create(width, spacing, G45);
     
+    // Create separable filters for H4
     m_h1 = create(width, spacing, H41);
     m_h2 = create(width, spacing, H42);
     m_h3 = create(width, spacing, H43);
     m_h4 = create(width, spacing, H44);
     m_h5 = create(width, spacing, H45);
     m_h6 = create(width, spacing, H46);
-    
-    //    std::cout << m_g1 << "\n" << m_g2 << "\n" << m_g3 << "\n" << m_g4 << "\n" << m_g5 << std::endl;
-    std::cout << m_h1 << "\n" << m_h2 << "\n" << m_h3 << "\n" << m_h4 << "\n" << m_h5 << "\n" << m_h6 << std::endl;
-    
-    // Create separable filters for H4
-
     
     setup(image);
 }
@@ -124,4 +110,5 @@ void SteerableFiltersG4::steer(float theta, cv::Mat_<float> &g4, cv::Mat_<float>
     h4 = ha * m_h4a + hb * m_h4b + hc * m_h4c + hd * m_h4d + he * m_h4e  + hf * m_h4f;
 }
 
+_STEER_END
 

@@ -28,16 +28,7 @@
 #include "SteerableFiltersG2.h"
 #include <opencv2/imgproc/imgproc.hpp>
 
-typedef float (*KernelType)(float x);
-
-static cv::Mat_<float> create(int width, float spacing, KernelType f)
-{
-    cv::Mat_<float> kernel(1, width * 2 + 1);
-    for(int i = -width; i <= width; i++)
-        kernel(i+width) = f(float(i)*spacing);
-    
-    return kernel;
-}
+_STEER_BEGIN
 
 static float G21(float x) { return 0.9213 * (2.0*x*x - 1.0) * exp(-x*x); }
 static float G22(float x) { return exp(-x*x); }
@@ -57,7 +48,7 @@ static void wrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output)
     tmp.copyTo(output, (angle > M_PI));
 }
 
-SteerableFilters::SteerableFilters(const cv::Mat_<float> &image, int width, float spacing)
+SteerableFiltersG2::SteerableFiltersG2(const cv::Mat_<float> &image, int width, float spacing)
 {
     // Create separable filters for G2
     m_g1 = create(width, spacing, G21);
@@ -73,102 +64,7 @@ SteerableFilters::SteerableFilters(const cv::Mat_<float> &image, int width, floa
     setup(image);
 }
 
-//  phase = arg(G2, H2) where arg(x + iy) = atan(y,x), (opencv return angles in [0..2pi])
-//  0      = dark line
-//  pi     = bright line
-// +pi/2   = edge
-// -pi/2   = edge
-void SteerableFilters::computeMagnitudeAndPhase(const cv::Mat_<float> &g2, const cv::Mat_<float> &h2, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
-{
-    cv::cartToPolar(g2, h2, magnitude, phase); // [0..2*piI]
-    wrap(phase, phase); // [-pi/2 pi/2]
-    cv::patchNaNs(phase);
-}
-
-void SteerableFilters::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2)
-{
-    // Create the steering coefficients, then compute G2 and H2 at orientation theta:
-    float ct(cos(theta)), ct2(ct*ct), ct3(ct2*ct), st(sin(theta)), st2(st*st), st3(st2*st);
-    float ga(ct2), gb(-2.0 * ct * st), gc(st2);
-    float ha(ct3), hb(-3.0 * ct2 * st), hc(3.0 * ct * st2), hd(-st3);
-    g2 = ga * m_g2a + gb * m_g2b + gc * m_g2c;
-    h2 = ha * m_h2a + hb * m_h2b + hc * m_h2c + hd * m_h2d;
-}
-
-void SteerableFilters::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
-{
-    steer(theta, g2, h2);
-    computeMagnitudeAndPhase(g2, h2, magnitude, phase);
-    phase.setTo(0, (magnitude < 1e-6f));
-    
-    // Compute oriented energy as a function of angle theta
-    float c2t(cos(theta*2.0)), s2t(sin(theta*2.0));
-    e = m_c1 + (c2t * m_c2) + (s2t * m_c3);
-}
-
-void SteerableFilters::steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
-{
-    // Create the steering coefficients, then compute G2 and H2 at orientation theta:
-    cv::Mat_<float> ct, ct2, ct3, st, st2, st3;
-    cv::polarToCart(cv::Mat(), theta, ct, st);
-    ct2 = ct.mul(ct), ct3 = ct2.mul(ct);
-    st2 = st.mul(st), st3 = st2.mul(st);
-    g2 = ct2.mul(m_g2a) + (-2.0 * ct.mul(st).mul(m_g2b)) + (st2.mul(m_g2c));
-    h2 = ct3.mul(m_h2a) + (-3.0 * ct2.mul(st).mul(m_h2b)) + (3.0 * ct.mul(st2).mul(m_h2c)) + (-st3.mul(m_h2d));
-    computeMagnitudeAndPhase(g2, h2, magnitude, phase);
-    
-    // Compute oriented energy as a function of angle theta
-    cv::Mat_<float> c2t, s2t;
-    cv::polarToCart(cv::Mat(), theta * 2.0, c2t, s2t);
-    e = m_c1 + m_c2.mul(c2t) + m_c3.mul(s2t);
-}
-
-void SteerableFilters::phaseLine1(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(phase), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    lines = e.mul(lambda);
-}
-
-void SteerableFilters::phaseLine0(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    lines = e.mul(lambda);
-}
-
-void SteerableFilters::phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(cv::abs(phase) - M_PI_2), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    edges = e.mul(lambda);
-}
-
-void SteerableFilters::phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI_2), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    edges = e.mul(lambda);
-}
-
-void SteerableFilters::phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(phase + M_PI_2), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    edges = e.mul(lambda);
-}
-
-void SteerableFilters::setup(const cv::Mat_<float> &image)
+void SteerableFiltersG2::setup(const cv::Mat_<float> &image)
 {
     cv::sepFilter2D(image, m_g2a, CV_32FC1, m_g1, m_g2.t());
     cv::sepFilter2D(image, m_g2b, CV_32FC1, m_g3, m_g3.t());
@@ -210,3 +106,100 @@ void SteerableFilters::setup(const cv::Mat_<float> &image)
     m_theta *= 0.5;
 }
 
+//  phase = arg(G2, H2) where arg(x + iy) = atan(y,x), (opencv return angles in [0..2pi])
+//  0      = dark line
+//  pi     = bright line
+// +pi/2   = edge
+// -pi/2   = edge
+void SteerableFiltersG2::computeMagnitudeAndPhase(const cv::Mat_<float> &g2, const cv::Mat_<float> &h2, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
+{
+    cv::cartToPolar(g2, h2, magnitude, phase); // [0..2*piI]
+    wrap(phase, phase); // [-pi/2 pi/2]
+    cv::patchNaNs(phase);
+}
+
+void SteerableFiltersG2::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2)
+{
+    // Create the steering coefficients, then compute G2 and H2 at orientation theta:
+    float ct(cos(theta)), ct2(ct*ct), ct3(ct2*ct), st(sin(theta)), st2(st*st), st3(st2*st);
+    float ga(ct2), gb(-2.0 * ct * st), gc(st2);
+    float ha(ct3), hb(-3.0 * ct2 * st), hc(3.0 * ct * st2), hd(-st3);
+    g2 = ga * m_g2a + gb * m_g2b + gc * m_g2c;
+    h2 = ha * m_h2a + hb * m_h2b + hc * m_h2c + hd * m_h2d;
+}
+
+void SteerableFiltersG2::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
+{
+    steer(theta, g2, h2);
+    computeMagnitudeAndPhase(g2, h2, magnitude, phase);
+    phase.setTo(0, (magnitude < 1e-6f));
+    
+    // Compute oriented energy as a function of angle theta
+    float c2t(cos(theta*2.0)), s2t(sin(theta*2.0));
+    e = m_c1 + (c2t * m_c2) + (s2t * m_c3);
+}
+
+void SteerableFiltersG2::steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
+{
+    // Create the steering coefficients, then compute G2 and H2 at orientation theta:
+    cv::Mat_<float> ct, ct2, ct3, st, st2, st3;
+    cv::polarToCart(cv::Mat(), theta, ct, st);
+    ct2 = ct.mul(ct), ct3 = ct2.mul(ct), st2 = st.mul(st), st3 = st2.mul(st);
+    g2 = ct2.mul(m_g2a) + (-2.0 * ct.mul(st).mul(m_g2b)) + (st2.mul(m_g2c));
+    h2 = ct3.mul(m_h2a) + (-3.0 * ct2.mul(st).mul(m_h2b)) + (3.0 * ct.mul(st2).mul(m_h2c)) + (-st3.mul(m_h2d));
+    computeMagnitudeAndPhase(g2, h2, magnitude, phase);
+    
+    // Compute oriented energy as a function of angle theta
+    cv::Mat_<float> c2t, s2t;
+    cv::polarToCart(cv::Mat(), theta * 2.0, c2t, s2t);
+    e = m_c1 + m_c2.mul(c2t) + m_c3.mul(s2t);
+}
+
+// Need a generic function to simplify these:
+
+void SteerableFiltersG2::phaseLine1(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
+{
+    cv::Mat_<float> phaseOffset = cv::abs(phase), cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, phaseOffset > M_PI_2 );
+    lines = e.mul(lambda);
+}
+
+void SteerableFiltersG2::phaseLine0(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
+{
+    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI), cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, phaseOffset > M_PI_2 );
+    lines = e.mul(lambda);
+}
+
+void SteerableFiltersG2::phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+{
+    cv::Mat_<float> phaseOffset = cv::abs(cv::abs(phase) - M_PI_2), cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, phaseOffset > M_PI_2 );
+    edges = e.mul(lambda);
+}
+
+void SteerableFiltersG2::phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+{
+    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI_2), cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, phaseOffset > M_PI_2 );
+    edges = e.mul(lambda);
+}
+
+void SteerableFiltersG2::phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+{
+    cv::Mat_<float> phaseOffset = cv::abs(phase + M_PI_2), cp, sp, lambda;
+    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
+    cv::pow(cp, k, lambda);
+    lambda.setTo(0, phaseOffset > M_PI_2 );
+    edges = e.mul(lambda);
+}
+
+_STEER_END

@@ -76,7 +76,7 @@ public:
             if(image.empty())
                 continue;
             
-            // cv::pyrDown(image, image);
+            cv::pyrDown(image, image);
             //cv::resize(image, image, cv::Size(100, 100*image.rows/image.cols));
             
             cv::medianBlur(image, image, 3);
@@ -94,15 +94,16 @@ public:
             frankotchellapa(dx, dy, z);
             
             cv::Mat_<float> g2, h2, e, magnitude, phase, edges, lines0, lines1;
-            SteerableFilters filters(z, 4, 0.67);
+            fa::SteerableFiltersG2 filters(z, 4, 0.67);
             filters.steer(filters.getDominantOrientationAngle(), g2, h2, e, magnitude, phase);
             filters.phaseEdge(e, phase, edges, 2.0);
             filters.phaseLine0(e, phase, lines0, 2.0);
             filters.phaseLine1(e, phase, lines1, 2.0);
             
 #if 1
+            cv::imshow("image", image);
             cv::Mat_<float> g4, h4, m4, m2;
-            SteerableFiltersG4 filters4(z, 6, 0.5);
+            fa::SteerableFiltersG4 filters4(z, 6, 0.5);
             for(int t = 0; ; t++)
             {
                 filters4.steer(t * M_PI/180.0, g4, h4);
