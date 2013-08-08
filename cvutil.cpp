@@ -191,6 +191,103 @@ void ColorSobel(const cv::Mat &image, cv::Mat &dx, cv::Mat &dy, cv::Mat &magnitu
     
 };
 
+// http://www.mathworks.com/matlabcentral/fileexchange/19696-gaussdiff/content/gaussiankernel.m
+void gder(float sigma, int order, cv::Mat_<float> &filter)
+{
+    int size = std::max(int(4.0 * sigma + 0.5f), 1);
+    int kernelSize = 2 * size + 1;
+    const float sigma2 = sigma*sigma;
+    
+    cv::Mat_<float> g(1, kernelSize);
+    cv::Mat_<float> X(1, kernelSize);
+    
+    float *gp = g.ptr<float>();
+    float *xp = X.ptr<float>();
+    
+    for(int x = -size; x<=size; ++x)
+    {
+        xp[x+size] = x;
+        gp[x+size] = exp( - x*x / (2.0*sigma2) ); // unnormalized gaussian
+    }
+    
+    X *= 1.0 / (sigma*M_SQRT2);
+    
+    cv::Mat_<float> part;
+    switch(order)
+    {
+        case 0: part = cv::Mat_<float>::ones(g.size()); break;
+        case 1: part = X * 2; break;
+        case 2: part = -2.0 + X.mul(X) * 4.0; break;
+        case 3: { cv::Mat_<float> X3; cv::pow(X, 3, X3), part = -12.0*X + 8.0*X3; }; break;
+        case 4: { cv::Mat_<float> X2; cv::pow(X, 2, X2), part = 12.0 - 48.0*X2 + 16*X2.mul(X2); }; break;
+        case 5: { cv::Mat_<float> X3; cv::pow(X, 3, X3), part = 120.0*X - 160.*X3 + 32.0*X3.mul(X).mul(X); }; break;
+    }
+    
+    // Apply hermite polynomial to gauss:
+    cv::Mat_<float> k = cv::pow(-1.0, order) * part.mul(g);
+    
+    // Normalize:
+    float norm_default = 1.0 / sum(g)[0];
+    float norm_hermite = 1.0 / cv::pow(sigma * M_SQRT2, order);
+    
+    filter = k * (norm_default * norm_hermite);
+}
+
+void StructureTensor2D(const cv::Mat &ux, const cv::Mat &uy, float rho, cv::Mat &Jxx, cv::Mat &Jxy, cv::Mat &Jyy )
+{
+    float scale = 1.0 / ux.channels();
+    Jxx = dot(ux, ux) * scale;
+    Jxy = dot(ux, uy) * scale;
+    Jyy = dot(uy, uy) * scale;
+    
+    cv::Mat_<float> g;
+    gder(rho, 0, g);
+    cv::sepFilter2D(Jxx, Jxx, CV_32F, g, g.t());
+    cv::sepFilter2D(Jxy, Jxy, CV_32F, g, g.t());
+    cv::sepFilter2D(Jyy, Jyy, CV_32F, g, g.t());
+}
+
+static cv::Mat sqr(const cv::Mat &src) { return src.mul(src); }
+void Eigenvectors2D(const cv::Mat &Dxx, const cv::Mat &Dxy, const cv::Mat &Dyy, cv::Mat &lambda1, cv::Mat &lambda2, cv::Mat &v1x, cv::Mat &v1y, cv::Mat &v2x, cv::Mat &v2y)
+{
+    // Compute the eigenvalues:
+    cv::Mat D, magnitude;
+    cv::sqrt( sqr(Dxx-Dyy) + sqr(2.0 * Dxy), D);
+    cv::Mat tmp = Dxx + Dyy;
+    lambda1 = 0.5 * (tmp + D);
+    lambda2 = 0.5 * (tmp - D);
+    
+    // Compute eigenvectors:
+    v2y = (Dyy - Dxx + D);
+    v2x = (2.0 * Dxy);
+    cv::magnitude(v2x, v2y, magnitude);
+    
+    magnitude.setTo(1e-6f, (magnitude == 0)); // avoid division by zero
+    v2x /= magnitude;
+    v2y /= magnitude;
+    
+    v2x.setTo(0, magnitude == 0);
+    v2y.setTo(0, magnitude == 0);
+    
+    v1x = -v2y;
+    v1y = v2x;
+    
+    // Compute eigenvectors:
+    v2y = (Dyy - Dxx + D);
+    v2x = (2.0 * Dxy);
+    cv::magnitude(v2x, v2y, magnitude);
+    
+    magnitude.setTo(1e-6f, (magnitude == 0)); // avoid division by zero
+    v2x /= magnitude;
+    v2y /= magnitude;
+    
+    v2x.setTo(0, magnitude == 0);
+    v2y.setTo(0, magnitude == 0);
+    
+    v1x = -v2y;
+    v1y = v2x;
+}
+
 // A poor man's matlab quiver display, via upsampling and anti-aliased line drawing
 cv::Mat quiver(const cv::Mat &image, const cv::Mat_<cv::Vec2f> &orientation, int yTic, int xTic, float scale)
 {

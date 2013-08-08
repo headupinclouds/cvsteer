@@ -52,6 +52,30 @@ static cv::Mat squash(const cv::Mat &image, float n, float percent)
     return cv::min(result, findPercentile(result, 95, 100));
 }
 
+// This runs an infinite loop showing quadrature filter magnitude from [0 .. 2*pi] for G2/H2 and G4/H4
+static void demo(const cv::Mat_<float> &image)
+{
+    cv::Mat_<float> g, h, m2, m4;
+    fa::SteerableFiltersG2 filters2(image, 4, 0.67);
+    fa::SteerableFiltersG4 filters4(image, 4, 0.67);
+    
+    for(int t = 0; ; t++)
+    {
+        filters2.steer(t * M_PI/180.0, g, h);
+        cv::magnitude(g, h, m2);
+        cv::normalize(m2, m2, 0, 1, cv::NORM_MINMAX, CV_32FC1);
+        
+        filters4.steer(t * M_PI/180.0, g, h);
+        cv::magnitude(g, h, m4);
+        cv::normalize(m4, m4, 0, 1, cv::NORM_MINMAX, CV_32FC1);
+        
+        cv::hconcat(m2, m4, m4);
+        cv::namedWindow("m4", CV_WINDOW_NORMAL);
+        cv::imshow("m4", m4);
+        cv::waitKey(40);
+    }    
+}
+
 #include <numeric>
 #include "SteerableFiltersG4.h"
 
@@ -76,9 +100,8 @@ public:
             if(image.empty())
                 continue;
             
-            cv::pyrDown(image, image);
+            //cv::pyrDown(image, image);
             //cv::resize(image, image, cv::Size(100, 100*image.rows/image.cols));
-            
             cv::medianBlur(image, image, 3);
             
             if(image.channels() != 1)
@@ -93,53 +116,18 @@ public:
             dy = dy.mul(m);
             frankotchellapa(dx, dy, z);
             
+            cv::normalize(z, z, 0, 1, cv::NORM_MINMAX);
+            
             cv::Mat_<float> g2, h2, e, magnitude, phase, edges, lines0, lines1;
-            fa::SteerableFiltersG2 filters(z, 4, 0.67);
-            filters.steer(filters.getDominantOrientationAngle(), g2, h2, e, magnitude, phase);
-            filters.phaseEdge(e, phase, edges, 2.0);
-            filters.phaseLine0(e, phase, lines0, 2.0);
-            filters.phaseLine1(e, phase, lines1, 2.0);
+            fa::SteerableFiltersG2 filters2(z, 4, 0.67);
+            filters2.steer(filters2.getDominantOrientationAngle(), g2, h2, e, magnitude, phase);
+            filters2.phaseEdge(e, phase, edges, 2.0);
+            filters2.phaseLine0(e, phase, lines0, 2.0);
+            filters2.phaseLine1(e, phase, lines1, 2.0);
+        
+            demo(z);
             
-#if 1
-            cv::imshow("image", image);
-            cv::Mat_<float> g4, h4, m4, m2;
-            fa::SteerableFiltersG4 filters4(z, 6, 0.5);
-            for(int t = 0; ; t++)
-            {
-                filters4.steer(t * M_PI/180.0, g4, h4);
-                cv::magnitude(g4, h4, m4);
-                cv::normalize(m4, m4, 0, 1, cv::NORM_MINMAX, CV_32FC1);
-                
-                filters.steer(t * M_PI/180.0, g2, h2);
-                cv::magnitude(g2, h2, m2);
-                cv::normalize(m2, m2, 0, 1, cv::NORM_MINMAX, CV_32FC1);
-                
-                cv::hconcat(m4, m2, m4);
-                cv::imshow("m4", m4), cv::waitKey(40);
-            }
-#endif
-            
-
-
-#if 0
-            cv::Mat_<short> dx_, dy_, output;
-            cv::polarToCart(cv::Mat(), filters.getDominantOrientationAngle(), dx, dy);
-            dx = edges.mul(dx);
-            dy = edges.mul(dy);
-
-            
-            double maxVal = 0;
-            cv::minMaxLoc(cv::abs(edges), 0, &maxVal);
-            float top = float(std::numeric_limits<short>::max());
-            dx.convertTo(dx_, CV_16S, top/maxVal);
-            dy.convertTo(dy_, CV_16S, top/maxVal);
-            CannyRawInput( output, dx_, dy_, top/96.0, top/32.0, true ); // top/64=511.98
-            cv::imshow("out", output), cv::waitKey(0);
-#endif
-            
-            // cv::Mat p2 = cv::abs(phase) * (1.0/M_PI); cv::imshow("phase", p2), cv::waitKey(0);
-            
-            // Now display the computed results:
+            // ((((((((((((((((( Now display the computed results )))))))))))))))))
             std::vector<cv::Mat> images;
             cv::Mat canvas;;
             
@@ -169,7 +157,6 @@ public:
             
             images.push_back(canvas.clone());
         
-     
             //cv::Mat arrows = quiver(image, -dx, dy, 3, 3, 10.0);
             //cv::imshow("a", arrows), cv::waitKey(0);
             
@@ -244,10 +231,6 @@ int main(int argc, const char * argv[])
     
     body( cv::Range(0, filenames.size() ) );
     //cv::parallel_for_(cv::Range(0, static_cast<int>(filenames.size())), body);
-    
-    //cv::Mat canvas;
-    //cv::vconcat(images, canvas);
-    //cv::namedWindow("g2h2", CV_WINDOW_NORMAL), cv::imshow("g2h2", canvas), cv::waitKey(0);
     
     return 0;
 }

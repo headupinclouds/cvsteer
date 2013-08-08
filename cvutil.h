@@ -84,6 +84,9 @@ void reduce(const cv::Mat &image, int op, cv::Mat &output);
 cv::Mat dot(const cv::Mat &src0, const cv::Mat &src1);
 void MaxSobel(const cv::Mat &image, cv::Mat &dx, cv::Mat &dy, int kernel, float scale);
 void ColorSobel(const cv::Mat &image, cv::Mat &dx, cv::Mat &dy, cv::Mat &magnitude, int kernel, float scale);
+void gder(float sigma, int order, cv::Mat_<float> &filter);
+void StructureTensor2D(const cv::Mat &ux, const cv::Mat &uy, float rho, cv::Mat &Jxx, cv::Mat &Jxy, cv::Mat &Jyy );
+void Eigenvectors2D(const cv::Mat &Dxx, const cv::Mat &Dxy, const cv::Mat &Dyy, cv::Mat &lambda1, cv::Mat &lambda2, cv::Mat &v1x, cv::Mat &v1y, cv::Mat &v2x, cv::Mat &v2y);
 
 // A poor man's matlab quiver display, via upsampling and anti-aliased line drawing
 cv::Mat quiver(const cv::Mat &image, const cv::Mat_<cv::Vec2f> &orientation, int yTic, int xTic, float scale);
