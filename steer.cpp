@@ -125,7 +125,7 @@ public:
             filters2.phaseLine0(e, phase, lines0, 2.0);
             filters2.phaseLine1(e, phase, lines1, 2.0);
         
-            demo(z);
+            // demo(z);
             
             // ((((((((((((((((( Now display the computed results )))))))))))))))))
             std::vector<cv::Mat> images;
