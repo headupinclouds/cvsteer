@@ -51,6 +51,7 @@ public:
     void setup(const cv::Mat_<float> &image);
 
     // Processing on entire images:
+    void steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2);
     void steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
     void steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
     void computeMagnitudeAndPhase(const cv::Mat_<float> &g2, const cv::Mat_<float> &h2, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);

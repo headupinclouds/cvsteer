@@ -76,12 +76,19 @@ void SteerableFilters::computeMagnitudeAndPhase(const cv::Mat_<float> &g2, const
     cv::patchNaNs(phase);
 }
 
-void SteerableFilters::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
+void SteerableFilters::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2)
 {
     // Create the steering coefficients, then compute G2 and H2 at orientation theta:
     float ct(cos(theta)), ct2(ct*ct), ct3(ct2*ct), st(sin(theta)), st2(st*st), st3(st2*st);
-    g2 = ct2 * m_g2a + (-2.0 * ct * st * m_g2b) + (st2 * m_g2c);
-    h2 = ct3 * m_h2a + (-3.0 * ct2 * st * m_h2b) + (3.0 * ct * st2 * m_h2c) + (-st3 * m_h2d);
+    float ga(ct2), gb(-2.0 * ct * st), gc(st2);
+    float ha(ct3), hb(-3.0 * ct2 * st), hc(3.0 * ct * st2), hd(-st3);
+    g2 = ga * m_g2a + gb * m_g2b + gc * m_g2c;
+    h2 = ha * m_h2a + hb * m_h2b + hc * m_h2c + hd * m_h2d;
+}
+
+void SteerableFilters::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase)
+{
+    steer(theta, g2, h2);
     computeMagnitudeAndPhase(g2, h2, magnitude, phase);
     phase.setTo(0, (magnitude < 1e-6f));
     
