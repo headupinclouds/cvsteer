@@ -39,6 +39,15 @@ static cv::Mat_<float> create(int width, float spacing, KernelType f)
     return kernel;
 }
 
+static float G21(float x) { return 0.9213 * (2.0*x*x - 1.0) * exp(-x*x); }
+static float G22(float x) { return exp(-x*x); }
+static float G23(float x) { return sqrt(1.8430) * x * exp(-x*x); }
+
+static float H21(float x) { return 0.9780 * (-2.254 * x + x*x*x) * exp(-x*x);}
+static float H22(float x) { return exp(-x*x);}
+static float H23(float x) { return x * exp(-x*x); }
+static float H24(float x) { return 0.9780 * (-0.7515 + x*x) * exp(-x*x); }
+
 // Utility routine to map the opencv atan2 output from [0 2*pi] to [-pi/2 pi/2]
 // This isn't truly necessary but is should be helpful to provide compatibility with conventions in the paper
 static void wrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output)
