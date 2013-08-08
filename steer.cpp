@@ -25,14 +25,14 @@
 // of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 
-#include "SteerableFilters.h"
+#include "SteerableFiltersG2.h"
+#include "SteerableFiltersG4.h"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <iostream>
-#include "ConicSection.h"
 
 void CannyRawInput( cv::Mat &dst, cv::Mat_<short> &dx, cv::Mat_<short> &dy, double low_thresh, double high_thresh, bool L2gradient );
 

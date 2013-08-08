@@ -25,7 +25,7 @@
 // of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 
-#include "SteerableFilters.h"
+#include "SteerableFiltersG2.h"
 #include <opencv2/imgproc/imgproc.hpp>
 
 typedef float (*KernelType)(float x);
