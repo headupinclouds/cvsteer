@@ -48,11 +48,11 @@ public:
     void steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
     void steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
     void computeMagnitudeAndPhase(const cv::Mat_<float> &g2, const cv::Mat_<float> &h2, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
-    void phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k=2.0);
-    void phaseLine0(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k=2.0);
-    void phaseLine1(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k=2.0);
-    void phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k=2.0);
-    void phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k=2.0);
+    
+    void findEdges(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k=2.0);
+    void findDarkLines(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k=2.0);
+    void findBrightLines(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k=2.0);
+    
 protected:
     
     cv::Mat_<float> m_dx, m_dy;

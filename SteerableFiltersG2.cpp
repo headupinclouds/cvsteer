@@ -27,6 +27,7 @@
 
 #include "SteerableFiltersG2.h"
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 _STEER_BEGIN
 
@@ -116,6 +117,7 @@ void SteerableFiltersG2::computeMagnitudeAndPhase(const cv::Mat_<float> &g2, con
     cv::cartToPolar(g2, h2, magnitude, phase); // [0..2*piI]
     wrap(phase, phase); // [-pi/2 pi/2]
     cv::patchNaNs(phase);
+    phase.setTo(10000, magnitude < 1e-2f);
 }
 
 void SteerableFiltersG2::steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2)
@@ -155,51 +157,33 @@ void SteerableFiltersG2::steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2
     e = m_c1 + m_c2.mul(c2t) + m_c3.mul(s2t);
 }
 
-// Need a generic function to simplify these:
+//  phase = arg(G2, H2) where arg(x + iy) = atan(y,x), (opencv return angles in [0..2pi])
+//  0      = dark line
+//  pi     = bright line
+// +pi/2   = edge
+// -pi/2   = edge
 
-void SteerableFiltersG2::phaseLine1(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
+static void phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float phi, bool signum, float k)
 {
-    cv::Mat_<float> phaseOffset = cv::abs(phase), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    lines = e.mul(lambda);
-}
-
-void SteerableFiltersG2::phaseLine0(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    lines = e.mul(lambda);
-}
-
-void SteerableFiltersG2::phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
-{
-    cv::Mat_<float> phaseOffset = cv::abs(cv::abs(phase) - M_PI_2), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
+    cv::Mat_<float> ct, st, lambda, error = cv::abs( signum ? (phase-phi) : (cv::abs(phase)-std::abs(phi)) );
+    error = cv::min(error, 2.0*M_PI-error);
+    cv::polarToCart(cv::Mat(), error, ct, st);
+    lambda = ct.mul(ct); //cv::pow(cv::abs(ct), k, lambda);
+    lambda.setTo(0, cv::abs(error) > M_PI_2);   
     edges = e.mul(lambda);
 }
 
-void SteerableFiltersG2::phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+void SteerableFiltersG2::findEdges(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k)
 {
-    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI_2), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    edges = e.mul(lambda);
+    phaseEdge(e, phase, output, M_PI_2, false, k);
 }
-
-void SteerableFiltersG2::phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
+void SteerableFiltersG2::findDarkLines(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k)
 {
-    cv::Mat_<float> phaseOffset = cv::abs(phase + M_PI_2), cp, sp, lambda;
-    cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
-    cv::pow(cp, k, lambda);
-    lambda.setTo(0, phaseOffset > M_PI_2 );
-    edges = e.mul(lambda);
+    phaseEdge(e, phase, output, 0, true, k);
+}
+void SteerableFiltersG2::findBrightLines(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k)
+{
+    phaseEdge(e, phase, output, M_PI, true, k);
 }
 
 _STEER_END

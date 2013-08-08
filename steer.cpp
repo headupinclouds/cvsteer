@@ -55,25 +55,36 @@ static cv::Mat squash(const cv::Mat &image, float n, float percent)
 // This runs an infinite loop showing quadrature filter magnitude from [0 .. 2*pi] for G2/H2 and G4/H4
 static void demo(const cv::Mat_<float> &image)
 {
-    cv::Mat_<float> g, h, m2, m4;
+    cv::Mat_<float> g2, h2, g4, h4, m2, m4;
     fa::SteerableFiltersG2 filters2(image, 4, 0.67);
-    fa::SteerableFiltersG4 filters4(image, 4, 0.67);
+    fa::SteerableFiltersG4 filters4(image, 6, 0.50);
     
     for(int t = 0; ; t++)
     {
-        filters2.steer(t * M_PI/180.0, g, h);
-        cv::magnitude(g, h, m2);
+        float theta = t * M_PI/180.0;
+        filters2.steer(theta, g2, h2);
+        cv::magnitude(g2, h2, m2);
+        { cv::Mat tmp[] = {g2, h2, m2}; cv::hconcat(tmp, 3, m2); }
         cv::normalize(m2, m2, 0, 1, cv::NORM_MINMAX, CV_32FC1);
         
-        filters4.steer(t * M_PI/180.0, g, h);
-        cv::magnitude(g, h, m4);
+        filters4.steer(theta, g4, h4);
+        cv::magnitude(g4, h4, m4);
+        { cv::Mat tmp[] = {g4, h4, m4}; cv::hconcat(tmp, 3, m4); }
         cv::normalize(m4, m4, 0, 1, cv::NORM_MINMAX, CV_32FC1);
-        
+
         cv::hconcat(m2, m4, m4);
-        cv::namedWindow("m4", CV_WINDOW_NORMAL);
-        cv::imshow("m4", m4);
-        cv::waitKey(40);
-    }    
+        
+        cv::Mat canvas;
+        m4.convertTo(canvas, CV_8UC1, 255.0);
+        cv::cvtColor(canvas, canvas, cv::COLOR_GRAY2BGR);
+        
+        cv::Point p(canvas.cols/2, canvas.rows/2), q(10.0*cos(theta), 10.0*sin(theta));
+        cv::line(canvas, p, p + q, CV_RGB(0,255,0), 2, CV_AA);
+        
+        cv::namedWindow("g2h2m2g4h4m4", CV_WINDOW_NORMAL);
+        cv::imshow("g2h2m2g4h4m4", canvas);
+        cv::waitKey(20);
+    }
 }
 
 #include <numeric>
@@ -91,6 +102,17 @@ public:
     
     void setDoLogging(bool flag) { m_doLogging = flag; }
     void setPercentileRank(float rank) { m_percentileRank = rank; }
+
+    cv::Mat_<cv::Vec3b> createTestImage(const cv::Size &size) const
+    {
+        cv::Mat_<cv::Vec3b> image(size, cv::Vec3b::all(127));
+        cv::Rect box(image.cols/8,image.rows/4,image.cols/4, image.rows/2);
+        //cv::rectangle(image, box, CV_RGB(0,0,0), -1);
+        cv::circle(image, cv::Point(image.cols/2,image.rows/2), box.size().width/2, CV_RGB(0,0,0), -1);
+        cv::line(image, cv::Point(image.cols*3/4, 0), cv::Point(image.cols*3/4, image.rows), CV_RGB(255,255,255), 3);
+        cv::line(image, cv::Point(image.cols*1/4, 0), cv::Point(image.cols*1/4, image.rows), CV_RGB(0,0,0), 3);
+        return image;
+    }
     
     virtual void operator()( const cv::Range &r ) const
     {
@@ -101,29 +123,49 @@ public:
                 continue;
             
             //cv::pyrDown(image, image);
-            //cv::resize(image, image, cv::Size(100, 100*image.rows/image.cols));
-            cv::medianBlur(image, image, 3);
+            cv::resize(image, image, cv::Size(100, 100*image.rows/image.cols));
+
+            image = createTestImage(cv::Size(400, 200));
             
             if(image.channels() != 1)
                 cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-           
-            cv::Mat dx, dy, m, o;
-            cv::Mat_<float> z;
-            //MaxSobel(image, dx, dy, 3, 1.0);
-            ColorSobel(image, dx, dy, m, 7, 1.0);
-            m = squash(m, 3.0, 75);
-            dx = dx.mul(m);
-            dy = dy.mul(m);
-            frankotchellapa(dx, dy, z);
+
+            { // bilateral filtering 
+                cv::Mat tmp, tmp2;
+                cv::cvtColor(image, tmp, cv::COLOR_BGR2Lab);
+                cv::bilateralFilter(tmp, tmp2, 10, 20, 0);
+                cv::cvtColor(tmp2, image, cv::COLOR_Lab2BGR);
+            }
             
-            cv::normalize(z, z, 0, 1, cv::NORM_MINMAX);
+            //cv::medianBlur(image, image, 3);
+           
+            cv::Mat_<float> z;
+            gray.convertTo(z, CV_32FC1);
+            cv::normalize(z, z, 0, 1, cv::NORM_MINMAX, CV_32FC1);
+
+#define DO_FRANKOT_CHELLAPA 0
+#if DO_FRANKOT_CHELLAPA
+            cv::Mat_<float> z2, m;
+            { // reconstruct integrable image from local gradients for color => gray projection
+                cv::Mat dx, dy, o;
+                MaxSobel(image, dx, dy, 3, 1.0), cv::magnitude(dx, dy, m);
+                //ColorSobel(image, dx, dy, m, 3, 1.0);
+                m = squash(m, 1.0, 90);
+                dx = dx.mul(m);
+                dy = dy.mul(m);
+                frankotchellapa(dx, dy, z2);
+                cv::normalize(z2, z2, 0, 1, cv::NORM_MINMAX, CV_32FC1);
+            }
+#endif
             
             cv::Mat_<float> g2, h2, e, magnitude, phase, edges, lines0, lines1;
-            fa::SteerableFiltersG2 filters2(z, 4, 0.67);
+            
+            float s=1.0;
+            fa::SteerableFiltersG2 filters2(z, 4*s, 0.67/s);
             filters2.steer(filters2.getDominantOrientationAngle(), g2, h2, e, magnitude, phase);
-            filters2.phaseEdge(e, phase, edges, 2.0);
-            filters2.phaseLine0(e, phase, lines0, 2.0);
-            filters2.phaseLine1(e, phase, lines1, 2.0);
+            filters2.findEdges(magnitude, phase, edges);
+            filters2.findDarkLines(magnitude, phase, lines0);
+            filters2.findBrightLines(magnitude, phase, lines1);
         
             // demo(z);
             
@@ -131,40 +173,48 @@ public:
             std::vector<cv::Mat> images;
             cv::Mat canvas;;
             
-            cv::normalize(gray, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-            images.push_back(canvas.clone());
-            
             cv::normalize(z, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-            //cv::equalizeHist(canvas, canvas);
             images.push_back(canvas.clone());
+
             
+#if DO_FRANKOT_CHELLAPA
+            cv::normalize(z2, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+            images.push_back(canvas.clone());
+#endif
+            
+#if 0
             // Normalize the g2 h2 images together:
             cv::hconcat(g2, h2, g2);
             g2 = squash(g2, 2.0, m_percentileRank);
             cv::normalize(g2, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
+#endif
             
             // Add the dominant orientation energy:
             e = squash(e, 2.0, m_percentileRank);
             cv::normalize(e, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
+
             
             // Normalize the phase-edge and phase-line images together to compare magnitude:
             cv::Mat channels[3] = { edges, lines0, lines1 };
-            cv::hconcat(channels, 3, edges);
-            edges = squash(edges, 2.0, m_percentileRank);
-            cv::normalize(edges, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+            //for(int i = 0; i < 3; i++)
+            //    cv::normalize(channels[i], channels[i], 0, 1, cv::NORM_MINMAX);
             
+            cv::hconcat(channels, 3, edges);
+            //edges = squash(edges, 6.0, m_percentileRank);
+            cv::normalize(edges, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
             images.push_back(canvas.clone());
         
             //cv::Mat arrows = quiver(image, -dx, dy, 3, 3, 10.0);
             //cv::imshow("a", arrows), cv::waitKey(0);
+        
+            cv::hconcat(images, canvas);  
             
-            cv::normalize(m, canvas, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-            images.push_back(canvas.clone());
+            cv::cvtColor(canvas, canvas, cv::COLOR_GRAY2BGR);
+            cv::hconcat(image, canvas, canvas);
             
-            
-            cv::hconcat(images, canvas);  // cv::imshow("g2h2", canvas), cv::waitKey(0);
+             cv::imshow("g2h2", canvas), cv::waitKey(0);
         
             m_images[i] = canvas;
         

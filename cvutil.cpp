@@ -71,12 +71,12 @@ void frankotchellapa(const cv::Mat_<float> &dx, const cv::Mat_<float> &dy, cv::M
     
     cv::Mat dx_, DX, dy_, DY, wx_, wy_, d_, z;
     {
-        cv::Mat planes[2] = { dx.mul(h), cv::Mat_<float>(size, 0.f) };
+        cv::Mat planes[2] = { dx, cv::Mat_<float>(size, 0.f) };
         cv::merge(planes, 2, dx_);
         cv::dft(dx_, dx_, cv::DFT_COMPLEX_OUTPUT);
     }
     {
-        cv::Mat planes[2] = { dy.mul(h), cv::Mat_<float>(size, 0.f) };
+        cv::Mat planes[2] = { dy, cv::Mat_<float>(size, 0.f) };
         cv::merge(planes, 2, dy_);
         cv::dft(dy_, dy_, cv::DFT_COMPLEX_OUTPUT);
     }
@@ -130,8 +130,8 @@ cv::Mat dot(const cv::Mat &src0, const cv::Mat &src1)
 void MaxSobel(const cv::Mat &image, cv::Mat &dx, cv::Mat &dy, int kernel, float scale)
 {
     cv::Mat dx_, dy_;
-    cv::Sobel(image, dx_, CV_32F, 1, 0, kernel, scale);
-    cv::Sobel(image, dy_, CV_32F, 0, 1, kernel, scale);
+    cv::Scharr(image, dx_, CV_32F, 1, 0, kernel, scale);
+    cv::Scharr(image, dy_, CV_32F, 0, 1, kernel, scale);
     reduce(dx_, CV_REDUCE_MAX, dx);
     reduce(dy_, CV_REDUCE_MAX, dy);
 }
@@ -144,6 +144,7 @@ void ColorSobel(const cv::Mat &image, cv::Mat &dx, cv::Mat &dy, cv::Mat &magnitu
     cv::Mat dx_, dy_, dxx, dxy, dyy, lambda1, lambda2, D;
     cv::Sobel(luv, dx_, CV_32F, 1, 0, kernel, scale);
     cv::Sobel(luv, dy_, CV_32F, 0, 1, kernel, scale);
+
     dxx = dot(dx_, dx_);
     dxy = dot(dx_, dy_);
     dyy = dot(dy_, dy_);
