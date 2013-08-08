@@ -45,8 +45,8 @@ public:
     
     SteerableFilters(const cv::Mat_<float> &image, int width = 4, float spacing = 0.67);
 
-    const cv::Mat_<float> getDominantOrientationAngle() const { return m_theta; }
-    const cv::Mat_<float> getDominantOrientationStrength() const { return m_orientationStrength; }
+    const cv::Mat_<float>& getDominantOrientationAngle() const { return m_theta; }
+    const cv::Mat_<float>& getDominantOrientationStrength() const { return m_orientationStrength; }
 
     void setup(const cv::Mat_<float> &image);
 
@@ -60,7 +60,8 @@ public:
     void phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k=2.0);
     void phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k=2.0);
 protected:
-        
+    
+    cv::Mat_<float> m_dx, m_dy;
     cv::Mat_<float> m_g1, m_g2, m_g3, m_h1, m_h2, m_h3, m_h4;
     cv::Mat_<float> m_g2a, m_g2b, m_g2c, m_h2a, m_h2b, m_h2c, m_h2d;
     cv::Mat_<float> m_c1, m_c2, m_c3, m_theta, m_orientationStrength;

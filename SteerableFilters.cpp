@@ -109,46 +109,46 @@ void SteerableFilters::steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, 
 
 void SteerableFilters::phaseLine1(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
 {
-    cv::Mat_<float> phaseOffset = phase, cp, sp, lambda;
+    cv::Mat_<float> phaseOffset = cv::abs(phase), cp, sp, lambda;
     cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
     cv::pow(cp, k, lambda);
-    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    lambda.setTo(0, phaseOffset > M_PI_2 );
     lines = e.mul(lambda);
 }
 
 void SteerableFilters::phaseLine0(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &lines, float k)
 {
-    cv::Mat_<float> phaseOffset = phase - M_PI, cp, sp, lambda;
+    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI), cp, sp, lambda;
     cv::polarToCart(cv::Mat(), phaseOffset, cp, sp); // implicitly (phase - 0)
     cv::pow(cp, k, lambda);
-    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    lambda.setTo(0, phaseOffset > M_PI_2 );
     lines = e.mul(lambda);
 }
 
 void SteerableFilters::phaseEdge(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
 {
-    cv::Mat_<float> phaseOffset = cv::abs(phase) - M_PI_2, cp, sp, lambda;
+    cv::Mat_<float> phaseOffset = cv::abs(cv::abs(phase) - M_PI_2), cp, sp, lambda;
     cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
     cv::pow(cp, k, lambda);
-    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    lambda.setTo(0, phaseOffset > M_PI_2 );
     edges = e.mul(lambda);
 }
 
 void SteerableFilters::phaseEdge01(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
 {
-    cv::Mat_<float> phaseOffset = phase - M_PI_2, cp, sp, lambda;
+    cv::Mat_<float> phaseOffset = cv::abs(phase - M_PI_2), cp, sp, lambda;
     cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
     cv::pow(cp, k, lambda);
-    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    lambda.setTo(0, phaseOffset > M_PI_2 );
     edges = e.mul(lambda);
 }
 
 void SteerableFilters::phaseEdge10(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &edges, float k)
 {
-    cv::Mat_<float> phaseOffset = phase + M_PI_2, cp, sp, lambda;
+    cv::Mat_<float> phaseOffset = cv::abs(phase + M_PI_2), cp, sp, lambda;
     cv::polarToCart(cv::Mat(), phaseOffset, cp, sp);
     cv::pow(cp, k, lambda);
-    lambda.setTo(0, cv::abs(phaseOffset) > M_PI_2 );
+    lambda.setTo(0, phaseOffset > M_PI_2 );
     edges = e.mul(lambda);
 }
 
