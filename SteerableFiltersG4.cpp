@@ -100,6 +100,28 @@ void SteerableFiltersG4::computeMagnitudeAndPhase(const cv::Mat_<float> &g2, con
  
 }
 
+void SteerableFiltersG4::steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g4, cv::Mat_<float> &h4)
+{
+    cv::Mat_<float> ct, ct2, ct3, ct4, ct5;
+    cv::Mat_<float> st, st2, st3, st4, st5;
+    
+    cv::polarToCart(cv::Mat(), theta, ct, st);
+    ct2 = ct.mul(ct);
+    ct3 = ct2.mul(ct);
+    ct4 = ct3.mul(ct);
+    ct5 = ct4.mul(ct);
+    
+    st2 = st.mul(st);
+    st3 = st2.mul(st);
+    st4 = st3.mul(st);
+    st5 = st4.mul(st);
+    
+    cv::Mat_<float> ga(ct4), gb(-4.0 * ct3.mul(st)), gc(6.0 * ct2.mul(st2)), gd(-4.0 * ct.mul(st3)), ge(st4);
+    cv::Mat_<float> ha(ct5), hb(-5.0f * ct4.mul(st)), hc(10.0 * ct3.mul(st2)), hd(-10.0 * ct2.mul(st3)), he(5.0 * ct.mul(st4)), hf(-st5);
+    g4 = ga.mul(m_g4a) + gb.mul(m_g4b) + gc.mul(m_g4c) + gd.mul(m_g4d) + ge.mul(m_g4e);
+    h4 = ha.mul(m_h4a) + hb.mul(m_h4b) + hc.mul(m_h4c) + hd.mul(m_h4d) + he.mul(m_h4e)  + hf.mul(m_h4f);
+}
+
 void SteerableFiltersG4::steer(float theta, cv::Mat_<float> &g4, cv::Mat_<float> &h4)
 {
     float ct(cos(theta)), ct2(ct*ct), ct3(ct2*ct), ct4(ct3*ct), ct5(ct4*ct);

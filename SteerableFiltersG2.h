@@ -43,6 +43,11 @@ public:
 
     void setup(const cv::Mat_<float> &image);
 
+    // Steer filters at single point:
+    void steer(const cv::Point &p, float theta, float &g2, float &h2);
+    void steer(const cv::Point &p, float theta, float &g2, float &h2, float &e, float &magnitude, float &phase);
+    void steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2);
+    
     // Processing on entire images:
     void steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2);
     void steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2, cv::Mat_<float> &e, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
@@ -53,6 +58,8 @@ public:
     void findDarkLines(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k=2.0);
     void findBrightLines(const cv::Mat_<float> &e, const cv::Mat_<float> &phase, cv::Mat_<float> &output, float k=2.0);
     
+    static void phaseWeights(const cv::Mat_<float> &phase, cv::Mat_<float> &lambda, float phi, bool signum, float k);
+    
 protected:
     
     cv::Mat_<float> m_dx, m_dy;
@@ -60,6 +67,10 @@ protected:
     cv::Mat_<float> m_g2a, m_g2b, m_g2c, m_h2a, m_h2b, m_h2c, m_h2d;
     cv::Mat_<float> m_c1, m_c2, m_c3, m_theta, m_orientationStrength;
 };
+
+
+
+
 
 _STEER_END
 

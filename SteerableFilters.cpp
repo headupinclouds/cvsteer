@@ -25,38 +25,27 @@
 // of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 
-#ifndef __steerable__SteerableFiltersG4__
-#define __steerable__SteerableFiltersG4__
-
 #include "SteerableFilters.h"
+#include <stdint.h>
 
 _STEER_BEGIN
 
-class SteerableFiltersG4 : public SteerableFilters
+cv::Mat_<float> SteerableFilters::create(int width, float spacing, KernelType f)
 {
-public:
+    cv::Mat_<float> kernel(1, width * 2 + 1);
+    for(int i = -width; i <= width; i++)
+        kernel(i+width) = f(float(i)*spacing);
+    
+    return kernel;
+}
 
-    SteerableFiltersG4(const cv::Mat_<float> &image, int width = 6, float spacing = 0.5);
-    
-    const cv::Mat_<float>& getDominantOrientationAngle() const { return m_theta; }
-    const cv::Mat_<float>& getDominantOrientationStrength() const { return m_orientationStrength; }
-    
-    void setup(const cv::Mat_<float> &image);
-    
-    // Processing on entire images:
-    void steer(const cv::Mat_<float> &theta, cv::Mat_<float> &g4, cv::Mat_<float> &h4);
-    void steer(float theta, cv::Mat_<float> &g4, cv::Mat_<float> &h4);
-    void computeMagnitudeAndPhase(const cv::Mat_<float> &g4, const cv::Mat_<float> &h4, cv::Mat_<float> &magnitude, cv::Mat_<float> &phase);
-     
-protected:
-    
-    cv::Mat_<float> m_g1, m_g2, m_g3, m_g4, m_g5;
-    cv::Mat_<float> m_h1, m_h2, m_h3, m_h4, m_h5, m_h6;
-    cv::Mat_<float> m_g4a, m_g4b, m_g4c, m_g4d, m_g4e;
-    cv::Mat_<float> m_h4a, m_h4b, m_h4c, m_h4d, m_h4e, m_h4f;
-    cv::Mat_<float> m_c1, m_c2, m_c3, m_theta, m_orientationStrength;
-};
+// Utility routine to map the opencv atan2 output from [0 2*pi] to [-pi/2 pi/2]
+// This isn't truly necessary but is should be helpful to provide compatibility with conventions in the paper
+void SteerableFilters::wrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output)
+{
+    output = angle.clone();
+    cv::Mat_<float> tmp = (-M_PI - (M_PI - angle));
+    tmp.copyTo(output, (angle > M_PI));
+}
 
 _STEER_END
-
-#endif
