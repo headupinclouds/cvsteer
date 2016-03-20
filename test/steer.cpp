@@ -24,12 +24,11 @@
 // The views and conclusions contained in the software and documentation are those
 // of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
-#define DO_DRISHTI_TIME 1
 
-#include "SteerableFiltersG2.h"
-#include "SteerableFiltersG4.h"
-#include "cvutil.h"
-#include "Pyramid.h"
+#include "cvsteer/Pyramid.h"
+#include "cvsteer/SteerableFiltersG2.h"
+#include "cvsteer/SteerableFiltersG4.h"
+
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <fstream>
@@ -46,19 +45,10 @@ static std::string basename(const std::string &name)
 	return base.substr(0, std::min(base.size()-1, base.rfind(".")));
 };
 
-static cv::Mat squash(const cv::Mat &image, float n, float percent)
-{
-    cv::Scalar mu, sigma;
-    cv::meanStdDev(image, mu, sigma);
-    cv::Mat result = cv::min(image, mu[0] + sigma[0]*n);
-    return cv::min(result, findPercentile(result, percent, 100));
-}
-
 cv::Mat3b createTestImage(const cv::Size &size)
 {
     cv::Mat_<cv::Vec3b> image(size, cv::Vec3b::all(127));
     cv::Rect box(image.cols/8,image.rows/4,image.cols/4, image.rows/2);
-    //cv::rectangle(image, box, CV_RGB(0,0,0), -1);
     cv::circle(image, cv::Point(image.cols/2,image.rows/2), box.size().width/2, CV_RGB(0,0,0), -1);
     cv::line(image, cv::Point(image.cols*3/4, 0), cv::Point(image.cols*3/4, image.rows), CV_RGB(255,255,255), 3);
     cv::line(image, cv::Point(image.cols*1/4, 0), cv::Point(image.cols*1/4, image.rows), CV_RGB(0,0,0), 3);
@@ -91,7 +81,8 @@ static void demo(const cv::Mat_<float> &image)
         lambda2.setTo(0, (phi >= M_PI_2));
         cv::imshow("lambda2", lambda2);
         
-        e2 = e2.mul(lambda2), cv::normalize(squash(e2, 1.0, 95), e2, 0, 1, cv::NORM_MINMAX);
+        e2 = e2.mul(lambda2);
+        cv::normalize(e2, e2, 0, 1, cv::NORM_MINMAX);
         cv::imshow("e2", e2);
         cv::waitKey(0);
         
@@ -137,11 +128,14 @@ public:
         {
             cv::Mat image = cv::imread(m_filenames[i]), gray;
             if(image.empty())
+            {
                 continue;
+            }
         
             if(image.channels() != 1)
+            {
                 cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-            
+            }
 
             // steerable pyramids
             fa::Pyramid pyramid(gray), edges(gray.size(), CV_32FC1);
@@ -194,12 +188,12 @@ struct Line
 const char *version = "0.1";
 const char *keys =
 {
-    "{   |  input       |       | input training file                        }"
-    "{   |  output      |  /tmp | output directory                           }"
-    "{   |  demo        | false | do steerable filter demo                   }"
-    "{   |  version     | false | display version number                     }"
-    "{   |  build       | false | display opencv build information           }"
-    "{   |  help        | false | help message                               }"
+    "{  input       |       | input training file                        }"
+    "{  output      |  /tmp | output directory                           }"
+    "{  demo        | false | do steerable filter demo                   }"
+    "{  version     | false | display version number                     }"
+    "{  build       | false | display opencv build information           }"
+    "{  help        | false | help message                               }"
 };
 
 int main(int argc, const char * argv[])
@@ -208,7 +202,7 @@ int main(int argc, const char * argv[])
     
     if(argc < 2 || parser.get<bool>("help"))
     {
-        parser.printParams();
+        //parser.printParams();
         return 0;
     }
     else if(parser.get<bool>("build"))
@@ -225,7 +219,9 @@ int main(int argc, const char * argv[])
     {
         cv::Mat image = createTestImage(cv::Size(320, 240));
         if(image.channels() == 3)
+        {
             cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+        }
         
         cv::Mat1f image_;
         cv::normalize(image, image_, 0, 1, cv::NORM_MINMAX, CV_32F);

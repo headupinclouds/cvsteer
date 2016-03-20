@@ -41,5 +41,7 @@ find_package(OpenCV REQUIRED)
 ## Project
 ## #################################################################
 
+include_directories(.)
+
 add_subdirectory(cvsteer)
 add_subdirectory (test)
