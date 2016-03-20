@@ -1,0 +1,55 @@
+# Mac OS X (https://github.com/travis-ci-tester/toolchain-table)
+
+language:
+    - objective-c
+
+os:
+  - linux
+  - osx
+
+# Container-based infrastructure (Linux)
+# * https://docs.travis-ci.com/user/migrating-from-legacy/#How-can-I-use-container-based-infrastructure%3F
+sudo:
+  - false
+  
+env:
+    - TOOLCHAIN=libcxx CONFIG=Release
+    - TOOLCHAIN=libcxx CONFIG=Debug
+    - TOOLCHAIN=xcode CONFIG=Release
+    - TOOLCHAIN=xcode CONFIG=Debug
+    - TOOLCHAIN=ios-nocodesign-arm64 CONFIG=Release
+    - TOOLCHAIN=ios-nocodesign-arm64 CONFIG=Debug
+    - TOOLCHAIN=ios-nocodesign-armv7 CONFIG=Release
+    - TOOLCHAIN=ios-nocodesign-armv7 CONFIG=Debug
+    # - TOOLCHAIN=analyze CONFIG=Release (error in OpenCV)
+    # - TOOLCHAIN=analyze CONFIG=Debug
+
+install:
+  # Info about OS
+  - uname -a
+
+  # Install Python 3
+  - if [[ "`uname`" == "Darwin" ]]; then brew install python3; fi
+
+  # Install Python package 'requests'
+  # 'easy_install3' is not installed by 'brew install python3' on OS X 10.9 Maverick
+  - if [[ "`uname`" == "Darwin" ]]; then pip3 install requests; fi
+  - if [[ "`uname`" == "Linux" ]]; then easy_install3 --user requests; fi
+
+  # Install latest Polly toolchains and scripts
+  - wget https://github.com/ruslo/polly/archive/master.zip
+  - unzip master.zip
+  - POLLY_ROOT="`pwd`/polly-master"
+  - export PATH="${POLLY_ROOT}/bin:${PATH}"
+
+  # Install dependencies (CMake, Android NDK)
+  - install-ci-dependencies.py
+
+  # Tune locations
+  - export PATH="`pwd`/_ci/cmake/bin:${PATH}"
+
+  # Installed if toolchain is Android (otherwise directory doesn't exist)
+  - export ANDROID_NDK_r10e="`pwd`/_ci/android-ndk-r10e"
+
+script:
+    - build.py --toolchain ${TOOLCHAIN} --config ${CONFIG} --verbose --fwd HUNTER_CONFIGURATION_TYPES=${CONFIG} --discard 10 --tail 100
