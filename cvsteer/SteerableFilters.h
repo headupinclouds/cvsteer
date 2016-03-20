@@ -33,10 +33,8 @@
 #include <math.h>
 #include <stdint.h>
 
+#include "cvsteer.h"
 #include <opencv2/core/core.hpp>
-
-#define _STEER_BEGIN namespace fa { // Freeman and Adelson
-#define _STEER_END }
 
 _STEER_BEGIN 
 
