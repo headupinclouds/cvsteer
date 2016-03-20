@@ -1,17 +1,90 @@
+# Windows (https://github.com/travis-ci-tester/toolchain-table)
+
 environment:
   matrix:
-    - TOOLCHAIN: "vs-12-2013"
+    ###
+    - TOOLCHAIN: "default"
       CONFIG: Release
 
-    - TOOLCHAIN: "vs-12-2013"
+    - TOOLCHAIN: "default"
       CONFIG: Debug
 
+    ###
+    - TOOLCHAIN: "ninja-vs-12-2013-win64"
+      CONFIG: Release
+
+    - TOOLCHAIN: "ninja-vs-12-2013-win64"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "nmake-vs-12-2013-win64"
+      CONFIG: Release
+
+    - TOOLCHAIN: "nmake-vs-12-2013-win64"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "nmake-vs-12-2013"
+      CONFIG: Release
+
+    - TOOLCHAIN: "nmake-vs-12-2013"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "vs-10-2010"
+      CONFIG: Release
+
+    - TOOLCHAIN: "vs-10-2010"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "vs-11-2012"
+      CONFIG: Release
+
+    - TOOLCHAIN: "vs-11-2012"
+      CONFIG: Debug
+
+    ###
     - TOOLCHAIN: "vs-12-2013-win64"
       CONFIG: Release
 
     - TOOLCHAIN: "vs-12-2013-win64"
       CONFIG: Debug
 
+    ###
+    - TOOLCHAIN: "vs-12-2013-xp"
+      CONFIG: Release
+
+    - TOOLCHAIN: "vs-12-2013-xp"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "vs-12-2013"
+      CONFIG: Release
+
+    - TOOLCHAIN: "vs-12-2013"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "vs-14-2015"
+      CONFIG: Release
+
+    - TOOLCHAIN: "vs-14-2015"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "vs-9-2008"
+      CONFIG: Release
+
+    - TOOLCHAIN: "vs-9-2008"
+      CONFIG: Debug
+
+    ###
+    - TOOLCHAIN: "mingw"
+      CONFIG: Release
+
+    - TOOLCHAIN: "mingw"
+      CONFIG: Debug
 
 install:
   # Python 3
@@ -23,10 +96,10 @@ install:
   # Install latest Polly toolchains and scripts
   - cmd: appveyor DownloadFile https://github.com/ruslo/polly/archive/master.zip
   - cmd: 7z x master.zip
-  - cmd: set POLLY_ROOT=%cd%\polly-master
+  - cmd: set POLLY_SOURCE_DIR=%cd%\polly-master
 
   # Install dependencies (CMake, Ninja)
-  - cmd: python %POLLY_ROOT%\bin\install-ci-dependencies.py
+  - cmd: python %POLLY_SOURCE_DIR%\bin\install-ci-dependencies.py
 
   # Tune locations
   - cmd: set PATH=%cd%\_ci\cmake\bin;%PATH%
@@ -41,10 +114,8 @@ install:
   # * http://www.appveyor.com/docs/installed-software#qt
   - cmd: set MINGW_PATH=C:\Qt\Tools\mingw492_32\bin
 
-  - git submodule update --init --recursive
-
 build_script:
-  - cmd: python build.py --verbose --pack TGZ --config "%CONFIG%" --toolchain "%TOOLCHAIN%"
+  - cmd: python %POLLY_SOURCE_DIR%\bin\build.py --toolchain "%TOOLCHAIN%" --config "%CONFIG%" --verbose --test
 
 artifacts:
   - path: _builds\*\cvsteersdk-*.tar.gz
