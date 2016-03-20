@@ -11,10 +11,9 @@
 #ifndef cvsteer_Pyramid_h
 #define cvsteer_Pyramid_h
 
-#include <opencv2/core/core.hpp>
+#include "cvsteer/cvsteer.h"
 
-#define _STEER_BEGIN namespace fa { // Freeman and Adelson
-#define _STEER_END }
+#include <opencv2/core/core.hpp>
 
 _STEER_BEGIN
 
