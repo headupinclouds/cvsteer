@@ -6,10 +6,10 @@ cmake_minimum_required(VERSION 3.0)
 ### Hunter snapshot that will be used ###
 include("cmake/HunterGate.cmake")
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.12.39.tar.gz"
-    SHA1 "587bc8f6278f2b09ec8759d2b6a2f8d828c30f49"
-    LOCAL
+    URL "https://github.com/ruslo/hunter/archive/v0.14.3.tar.gz"
+    SHA1 "e05bc95f6d62b7c55188044e39e8be5afb1e8af4"
 )
+  
 project(cvsteer VERSION 0.1.0)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
