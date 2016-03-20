@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/headupinclouds/cvsteer.svg?branch=master)](https://travis-ci.org/headupinclouds/cvsteer)
+
 cvsteer
 =======
 
