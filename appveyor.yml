@@ -44,7 +44,7 @@ install:
   - git submodule update --init --recursive
 
 build_script:
-  - cmd: python %POLLY_PATH%\build.py --verbose --pack TGZ --config "%CONFIG%" --toolchain "%TOOLCHAIN%"
+  - cmd: python build.py --verbose --pack TGZ --config "%CONFIG%" --toolchain "%TOOLCHAIN%"
 
 artifacts:
   - path: _builds\*\cvsteersdk-*.tar.gz
