@@ -114,11 +114,13 @@ using namespace cv;
 class ParallelSteerable : public cv::ParallelLoopBody
 {
 public:
-    ParallelSteerable(const std::vector<std::string> &filenames, std::vector<cv::Mat> &images, const std::string &directory )
+    ParallelSteerable(const std::vector<std::string> &filenames, std::vector<cv::Mat> &images, const std::string &directory, bool verbose=false )
     : m_filenames(filenames)
     , m_images(images)
     , m_directory(directory)
-    , m_doLogging(true) {}
+    , m_doLogging(true)
+    , m_doVerbose(verbose)
+    {}
     
     void setDoLogging(bool flag) { m_doLogging = flag; }
 
@@ -145,10 +147,17 @@ public:
                 fa::SteerableFiltersG2 filters2(pyramid[j], 4, 0.67);
                 filters2.steer(filters2.getDominantOrientationAngle(), g2, h2, e, magnitude, phase);
                 filters2.findEdges(magnitude, phase, tmp);
-                cv::normalize(tmp, tmp, 0, 1, cv::NORM_MINMAX);
             }
             cv::Mat canvas = fa::draw(edges);
-            cv::imshow("pyramid", canvas), cv::waitKey(0);
+            cv::Mat tmp;
+            cv::normalize(canvas, tmp, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+            cv::swap(tmp, canvas);
+            
+            if(m_doVerbose)
+            {
+                cv::imshow("pyramid", canvas);
+                cv::waitKey(0);
+            }
             
             m_images[i] = canvas;
         
@@ -162,6 +171,7 @@ public:
     
 protected:
     
+    bool m_doVerbose;
     bool m_doLogging;
     const std::string &m_directory;
     const std::vector<std::string> &m_filenames;
@@ -185,15 +195,25 @@ struct Line
 };
 
 // ((((((((((((((((((((((((((((((( Command line parameters )))))))))))))))))))))))))))))))
+
+#if CV_MAJOR_VERSION >= 3
+#define CV_DELIMITER ""
+void print(cv::CommandLineParser &p) { p.printMessage(); }
+#else
+#define CV_DELIMITER "|"
+void print(cv::CommandLineParser &p) { p.printParams(); }
+#endif
+
 const char *version = "0.1";
 const char *keys =
 {
-    "{  input       |       | input training file                        }"
-    "{  output      |  /tmp | output directory                           }"
-    "{  demo        | false | do steerable filter demo                   }"
-    "{  version     | false | display version number                     }"
-    "{  build       | false | display opencv build information           }"
-    "{  help        | false | help message                               }"
+    "{  " CV_DELIMITER " input       |       | input training file                        }"
+    "{  " CV_DELIMITER " output      |  /tmp | output directory                           }"
+    "{  " CV_DELIMITER " demo        | false | do steerable filter demo                   }"
+    "{  " CV_DELIMITER " verbose     | false | use verbose display                        }"
+    "{  " CV_DELIMITER " version     | false | display version number                     }"
+    "{  " CV_DELIMITER " build       | false | display opencv build information           }"
+    "{  " CV_DELIMITER " help        | false | help message                               }"
 };
 
 int main(int argc, const char * argv[])
@@ -202,7 +222,7 @@ int main(int argc, const char * argv[])
     
     if(argc < 2 || parser.get<bool>("help"))
     {
-        //parser.printParams();
+        print(parser);
         return 0;
     }
     else if(parser.get<bool>("build"))
@@ -242,9 +262,10 @@ int main(int argc, const char * argv[])
         {
             filenames.push_back(filename);
         }
-        
+
+        bool verbose = parser.get<bool>("verbose");
         std::vector<cv::Mat> images(filenames.size());
-        ParallelSteerable body(filenames, images, output);
+        ParallelSteerable body(filenames, images, output, verbose);
         
         body( cv::Range(0, filenames.size() ) );
         //cv::parallel_for_(cv::Range(0, static_cast<int>(filenames.size())), body);
