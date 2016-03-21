@@ -78,7 +78,3 @@ set(OPENCV_CMAKE_ARGS
   )
 
 hunter_config(OpenCV VERSION ${HUNTER_OpenCV_VERSION} CMAKE_ARGS "${OPENCV_CMAKE_ARGS}")
-
-
-
-
