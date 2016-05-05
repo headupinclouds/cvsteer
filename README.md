@@ -4,6 +4,16 @@ Travis:
 Appveyor:
 [![Build status](https://ci.appveyor.com/api/projects/status/64yofu0e25och6tp/branch/master?svg=true)](https://ci.appveyor.com/project/headupinclouds/cvsteer/branch/master)
 
+LICENSE
+=======
+
+This SW is released under both 3-clause BSD and Boost licenses.  Note that this SW uses OpenCV.  Please see relevant license files for that project.
+
+See:
+
+LICNESE.bsd
+LICENSE.boost
+
 
 cvsteer
 =======
