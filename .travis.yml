@@ -30,8 +30,9 @@ dist:
 matrix:
   include:
     # Linux {
-    - os: linux
-      env: CONFIG=Release TOOLCHAIN=default TEST=--test
+    # missing c++-11 support
+    # - os: linux
+    #   env: CONFIG=Release TOOLCHAIN=default TEST=--test
     - os: linux
       env: CONFIG=Release TOOLCHAIN=clang-libstdcxx TEST=--test
     - os: linux
