@@ -11,3 +11,9 @@
 *.lai
 *.la
 *.a
+
+# cmake temp
+_*
+
+# emacs
+*.*~

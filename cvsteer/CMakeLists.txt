@@ -1,6 +1,4 @@
 add_library(cvsteer
-  Pyramid.cpp
-  Pyramid.h
   SteerableFilters.cpp 
   SteerableFilters.h 
   SteerableFiltersG2.cpp
@@ -9,7 +7,11 @@ add_library(cvsteer
   SteerableFiltersG4.h
   )
 
-target_link_libraries(cvsteer ${OpenCV_LIBS})
+target_link_libraries(cvsteer PUBLIC ${OpenCV_LIBS})
+
+target_include_directories(cvsteer PUBLIC
+  "$<BUILD_INTERFACE:${CVSTEER_ROOT_DIR}>"
+)
 
 ### Install ###
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -18,7 +20,7 @@ set(config_install_dir "lib/cmake/${PROJECT_NAME}")
 set(include_install_dir "include")
 set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
-set(targets_export_name "${PROJECT_NAME}Targets")
+set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 set(namespace "${PROJECT_NAME}::")
 
 include(CMakePackageConfigHelpers)
@@ -26,12 +28,12 @@ write_basic_package_version_file(
     "${version_config}" COMPATIBILITY SameMajorVersion
 )
 
-# Note: use 'targets_export_name'
+# Note: use 'TARGETS_EXPORT_NAME'
 configure_file("../cmake/Config.cmake.in" "${project_config}" @ONLY)
 
 install(
     TARGETS ${PROJECT_NAME}
-    EXPORT "${targets_export_name}"
+    EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION "lib"
     ARCHIVE DESTINATION "lib"
     RUNTIME DESTINATION "bin"
@@ -40,7 +42,7 @@ install(
 
 install(
     FILES
-    Pyramid.h
+    cvsteer.h
     SteerableFilters.h 
     SteerableFiltersG2.h
     SteerableFiltersG4.h
@@ -53,7 +55,7 @@ install(
 )
 
 install(
-    EXPORT "${targets_export_name}"
+    EXPORT "${TARGETS_EXPORT_NAME}"
     NAMESPACE "${namespace}"
     DESTINATION "${config_install_dir}"
 )
