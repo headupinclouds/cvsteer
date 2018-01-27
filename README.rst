@@ -1,7 +1,7 @@
 cvsteer
 =======
 
-|Travis| |Appveyor|
+|Travis| |Appveyor| |License (3-Clause BSD)|
 
 LICENSE
 =======
@@ -39,21 +39,18 @@ Build
 
 ::
 
-    build.py --install --reconfig --verbose
+    polly.py --install --reconfig --verbose --fwd CVSTEER_BUILD_EXAMPLE=ON
 
 Run
 ===
 
 ::
 
-    _install/default/bin/cvsteer_test --demo
-
-TODO
-====
-
-Steerable pyramids via Simoncelli http://www.cns.nyu.edu/~eero/steerpyr/
+    _install/default/bin/cvsteer-run --input=/tmp/some_file.png --output=/tmp --gain=1.0
 
 .. |Travis| image:: https://img.shields.io/travis/headupinclouds/cvsteer/master.svg?style=flat-square&label=Linux%20OSX%20Android%20iOS
    :target: https://travis-ci.org/headupinclouds/cvsteer
 .. |Appveyor| image:: https://img.shields.io/appveyor/ci/headupinclouds/cvsteer.svg?style=flat-square&label=Windows
    :target: https://ci.appveyor.com/project/headupinclouds/cvsteer/branch/master
+.. |License (3-Clause BSD)| image:: https://img.shields.io/badge/license-BSD%203--Clause-brightgreen.svg?style=flat-square
+   :target: http://opensource.org/licenses/BSD-3-Clause
