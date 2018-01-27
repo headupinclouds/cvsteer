@@ -36,6 +36,7 @@
 #include <iostream>
 #include <iterator>
 #include <iostream>
+#include <cstdint>
 
 #include "Pterois_volitans_Manado-e_edit_smallest.h" // unsigned char Pterois_volitans_Manado_e_edit_smallest_gray_jpg[]
 #include "edges.h"                                   // unsigned char edges_jpeg[] 
