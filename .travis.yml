@@ -33,8 +33,9 @@ matrix:
     # missing c++-11 support
     # - os: linux
     #   env: CONFIG=Release TOOLCHAIN=default TEST=--test
-    - os: linux
-      env: CONFIG=Release TOOLCHAIN=clang-libstdcxx TEST=--test
+    # missing GTest
+    # - os: linux
+    #   env: CONFIG=Release TOOLCHAIN=clang-libstdcxx TEST=--test
     - os: linux
       env: CONFIG=Release TOOLCHAIN=gcc-5 TEST=--test
     - os: linux
