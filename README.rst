@@ -1,4 +1,7 @@
-Travis: |Build Status|
+cvsteer
+=======
+
+|Travis| |Apveyor|
 
 Appveyor: |Build status|
 
@@ -52,7 +55,7 @@ TODO
 
 Steerable pyramids via Simoncelli http://www.cns.nyu.edu/~eero/steerpyr/
 
-.. |Build Status| image:: https://travis-ci.org/headupinclouds/cvsteer.svg?branch=master
+.. |Travis| image:: https://img.shields.io/travis/headupinclouds/cvsteer/master.svg?style=flat-square&label=Linux%20OSX%20Android%20iOS
    :target: https://travis-ci.org/headupinclouds/cvsteer
-.. |Build status| image:: https://ci.appveyor.com/api/projects/status/64yofu0e25och6tp/branch/master?svg=true
+.. |Appveyor| image:: https://img.shields.io/appveyor/ci/headupinclouds/cvsteer.svg?style=flat-square&label=Windows
    :target: https://ci.appveyor.com/project/headupinclouds/cvsteer/branch/master
