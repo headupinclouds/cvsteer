@@ -1,9 +1,7 @@
 cvsteer
 =======
 
-|Travis| |Apveyor|
-
-Appveyor: |Build status|
+|Travis| |Appveyor|
 
 LICENSE
 =======
