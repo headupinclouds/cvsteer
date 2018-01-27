@@ -49,8 +49,9 @@ matrix:
       env: CONFIG=Release TOOLCHAIN=sanitize-address TEST=--test
     - os: linux
       env: CONFIG=Release TOOLCHAIN=sanitize-leak TEST=--test
-    - os: linux
-      env: CONFIG=Release TOOLCHAIN=sanitize-thread TEST=--test
+    # missing GTest
+    # - os: linux
+    #   env: CONFIG=Release TOOLCHAIN=sanitize-thread TEST=--test
     # }
 
     # OSX {
