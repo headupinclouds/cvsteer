@@ -1,4 +1,4 @@
-// Copyright (c) 2013, David Hirvonen
+// Copyright (c) 2013-2018, David Hirvonen
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -25,26 +25,28 @@
 // of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 
-#include "SteerableFilters.h"
+#include <cvsteer/SteerableFilters.h>
 #include <stdint.h>
 
 _STEER_BEGIN
 
-cv::Mat_<float> SteerableFilters::create(int width, float spacing, KernelType f)
+cv::Mat1f SteerableFilters::create(int width, float spacing, KernelType f)
 {
-    cv::Mat_<float> kernel(1, width * 2 + 1);
-    for(int i = -width; i <= width; i++)
-        kernel(i+width) = f(float(i)*spacing);
-    
+    cv::Mat1f kernel(1, width * 2 + 1);
+    for (int i = -width; i <= width; i++)
+    {
+        kernel(i + width) = f(float(i) * spacing);
+    }
+
     return kernel;
 }
 
 // Utility routine to map the opencv atan2 output from [0 2*pi] to [-pi/2 pi/2]
 // This isn't truly necessary but is should be helpful to provide compatibility with conventions in the paper
-void SteerableFilters::wrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output)
+void SteerableFilters::wrap(const cv::Mat1f& angle, cv::Mat1f& output)
 {
     output = angle.clone();
-    cv::Mat_<float> tmp = (-M_PI - (M_PI - angle));
+    cv::Mat1f tmp = (-M_PI - (M_PI - angle));
     tmp.copyTo(output, (angle > M_PI));
 }
 

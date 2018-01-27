@@ -1,4 +1,4 @@
-// Copyright (c) 2013, David Hirvonen
+// Copyright (c) 2013-2018, David Hirvonen
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -25,28 +25,28 @@
 // of the authors and should not be interpreted as representing official policies,
 // either expressed or implied, of the FreeBSD Project.
 
-#ifndef steerable_SteerableFilters_h
-#define steerable_SteerableFilters_h
+#ifndef __cvsteer_cvsteer_SteerableFilters_h__
+#define __cvsteer_cvsteer_SteerableFilters_h__
 
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <math.h>
 #include <stdint.h>
 
-#include "cvsteer.h"
+#include <cvsteer/cvsteer.h>
 #include <opencv2/core/core.hpp>
 
-_STEER_BEGIN 
+_STEER_BEGIN
 
 class SteerableFilters
 {
 public:
-    virtual void setup(const cv::Mat_<float> &image) = 0;
-    virtual void steer(float theta, cv::Mat_<float> &g2, cv::Mat_<float> &h2) = 0;
+    virtual void setup(const cv::Mat1f& image) = 0;
+    virtual void steer(float theta, cv::Mat1f& g2, cv::Mat1f& h2) = 0;
 protected:
     typedef float (*KernelType)(float x);
-    static cv::Mat_<float> create(int width, float spacing, KernelType f);
-    static void wrap(const cv::Mat_<float> &angle, cv::Mat_<float> &output);
+    static cv::Mat1f create(int width, float spacing, KernelType f);
+    static void wrap(const cv::Mat1f& angle, cv::Mat1f& output);
 };
 
 _STEER_END
