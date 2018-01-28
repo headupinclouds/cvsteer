@@ -25,10 +25,12 @@ else()
   set(CVSTEER_IS_MOBILE FALSE)
 endif()
 
-
-hunter_add_package(check_ci_tag)
-find_package(check_ci_tag CONFIG REQUIRED)
-check_ci_tag()
+option(CVSTEER_CHECK_CI_TAG "Check project vs git tag consistency" OFF)
+if(CVSTEER_CHECK_CI_TAG)
+  hunter_add_package(check_ci_tag)
+  find_package(check_ci_tag CONFIG REQUIRED)
+  check_ci_tag()
+endif()
 
 ## #################################################################
 ## Dependencies - OpenCV
