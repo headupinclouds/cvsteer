@@ -10,7 +10,7 @@ HunterGate(
   SHA1 "9e103596184adb7206430047375a07eb1fa6a9b4"
 )
   
-project(cvsteer VERSION 0.1.1)
+project(cvsteer VERSION 0.1.2)
 
 set(CVSTEER_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -24,6 +24,11 @@ if(IOS OR ANDROID)
 else()
   set(CVSTEER_IS_MOBILE FALSE)
 endif()
+
+
+hunter_add_package(check_ci_tag)
+find_package(check_ci_tag CONFIG REQUIRED)
+check_ci_tag()
 
 ## #################################################################
 ## Dependencies - OpenCV
